@@ -1,0 +1,7 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pyhanko==0.37.0
+cryptography>=43.0.0
+reportlab>=4.2.0
+python-multipart>=0.0.9
+pytest>=8.3.0

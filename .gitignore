@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+data/
+.pytest_cache/
+
+# local tool config
+.claude/
+
+# research notes — not part of the POC, keep out of the repo
+part*.md
+build_pdf.py
+pdf-digital-signing-research.md
+PDF-Digital-Signing-Research-Brief.pdf

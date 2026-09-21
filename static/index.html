@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bulk PDF Digital Signing — Live 2-Min Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
+    code, pre, .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .step-content { display: none; }
+    .step-content.active { display: block; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <!-- Top Navbar -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Bulk Invoice Signing POC</h1>
+            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Live 2-Min Demo</span>
+          </div>
+          <p class="text-xs text-slate-400">pyHanko + PKCS#12 Document Signer Certificate (PAdES)</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <button onclick="resetDemo()" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Restart Demo</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Shared-demo warning: there are no per-user workspaces -->
+  <div class="bg-amber-500/10 border-b border-amber-500/30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2 text-[11px] sm:text-xs text-amber-200 flex items-start gap-2">
+      <span aria-hidden="true">⚠️</span>
+      <span>
+        <strong class="text-amber-100">Shared demo.</strong>
+        Everyone using this link shares the same invoices and certificate, so you may see other people's files,
+        and <em>Restart Demo</em> clears them for everyone. Please <strong class="text-amber-100">don't upload a real company .pfx here</strong>;
+        use the built-in TEST certificate.
+      </span>
+    </div>
+  </div>
+
+  <!-- Flow Navigation Stepper (Guided Wizard) -->
+  <div class="bg-slate-900/60 border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-4 py-3">
+      <nav class="flex items-center justify-between text-xs overflow-x-auto gap-2 py-1">
+        
+        <!-- Step 1 Tab -->
+        <button id="stepTab1" onclick="goToStep(1)" class="flex items-center space-x-2 px-3 py-2 rounded-xl transition border shrink-0 bg-indigo-600/20 border-indigo-500/40 text-white font-semibold">
+          <span class="w-5 h-5 rounded-md bg-indigo-600 text-white font-bold flex items-center justify-center text-[11px]">1</span>
+          <span>Setup (Cert & Invoices)</span>
+        </button>
+
+        <span class="text-slate-600 text-sm hidden sm:inline">→</span>
+
+        <!-- Step 2 Tab -->
+        <button id="stepTab2" onclick="goToStep(2)" class="flex items-center space-x-2 px-3 py-2 rounded-xl transition border shrink-0 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200">
+          <span class="w-5 h-5 rounded-md bg-slate-800 text-slate-300 font-bold flex items-center justify-center text-[11px]">2</span>
+          <span>Bulk Sign</span>
+        </button>
+
+        <span class="text-slate-600 text-sm hidden sm:inline">→</span>
+
+        <!-- Step 3 Tab -->
+        <button id="stepTab3" onclick="goToStep(3)" class="flex items-center space-x-2 px-3 py-2 rounded-xl transition border shrink-0 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200">
+          <span class="w-5 h-5 rounded-md bg-slate-800 text-slate-300 font-bold flex items-center justify-center text-[11px]">3</span>
+          <span>Proof 1: ByteRange</span>
+        </button>
+
+        <span class="text-slate-600 text-sm hidden sm:inline">→</span>
+
+        <!-- Step 4 Tab -->
+        <button id="stepTab4" onclick="goToStep(4)" class="flex items-center space-x-2 px-3 py-2 rounded-xl transition border shrink-0 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200">
+          <span class="w-5 h-5 rounded-md bg-slate-800 text-slate-300 font-bold flex items-center justify-center text-[11px]">4</span>
+          <span>Proof 2: Tamper Test</span>
+        </button>
+
+        <span class="text-slate-600 text-sm hidden sm:inline">→</span>
+
+        <!-- Step 5 Tab -->
+        <button id="stepTab5" onclick="goToStep(5)" class="flex items-center space-x-2 px-3 py-2 rounded-xl transition border shrink-0 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200">
+          <span class="w-5 h-5 rounded-md bg-slate-800 text-slate-300 font-bold flex items-center justify-center text-[11px]">5</span>
+          <span>Done! Summary</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full">
+
+    <!-- ================= STEP 1: SETUP (CERT & INVOICES) ================= -->
+    <div id="stepView1" class="step-content active space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">STEP 1 OF 5</span>
+              <h2 class="text-lg font-bold text-white">Document Signer Certificate & Sample Invoices</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Our PKCS#12 Document Signer is ready. Generate sample invoices or upload custom PDFs.</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="openUploadCertModal()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+              Upload Real .PFX
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Cert Card -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+            <div class="text-[11px] text-slate-400">Signer Identity (Subject)</div>
+            <div id="certSubject" class="text-xs font-bold text-white mt-1 break-words">Dream Road Technologies (TEST Document Signer)</div>
+            <div class="mt-2 flex items-center space-x-2">
+              <span id="certTypeBadge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Self-Signed TEST
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">India (IN)</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+            <div class="text-[11px] text-slate-400">Key Usage Permissions</div>
+            <div class="text-xs font-semibold text-emerald-400 mt-1 flex items-center space-x-1.5">
+              <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>digitalSignature + nonRepudiation</span>
+            </div>
+            <div class="text-[10px] text-slate-400 mt-2">Required by pyHanko & Indian IT Act / PAdES</div>
+          </div>
+
+          <div class="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+            <div class="text-[11px] text-slate-400">Validity & Serial</div>
+            <div id="certValidity" class="text-xs font-semibold text-slate-200 mt-1">2 Years (Active)</div>
+            <div id="certSerial" class="text-[10px] font-mono text-slate-400 mt-2 truncate">SN: Loading...</div>
+          </div>
+        </div>
+
+        <!-- Invoices Actions -->
+        <div class="bg-slate-950/50 p-5 rounded-xl border border-slate-800/80 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold text-white">Generate Unsigned B2B Invoices</h3>
+              <p class="text-xs text-slate-400">Generates 10 uncompressed tax invoices with GST 18% and total amount <strong class="text-slate-200 font-mono">Rs. 59,000.00</strong>.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button id="btnGenerate" onclick="generateSampleInvoices()" class="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>Generate 10 Sample Invoices</span>
+              </button>
+
+              <label class="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>Upload PDF</span>
+                <input type="file" multiple accept=".pdf" onchange="uploadCustomPdfs(event)" class="hidden">
+              </label>
+            </div>
+          </div>
+
+          <!-- Invoice Pills & Quick Preview -->
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-2">
+              <span id="inputInvoicesCount">0 invoices ready</span>
+              <span>Click <strong class="text-indigo-400">Preview</strong> to inspect invoice page</span>
+            </div>
+            <div id="inputInvoicesList" class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Next Action Button -->
+        <div class="flex justify-end pt-2">
+          <button id="btnStep1Next" onclick="goToStep(2)" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-bold text-xs shadow-lg transition flex items-center space-x-2">
+            <span>Proceed to Bulk Signing →</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= STEP 2: BULK SIGNING ================= -->
+    <div id="stepView2" class="step-content space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">STEP 2 OF 5</span>
+              <h2 class="text-lg font-bold text-white">Automated Bulk Digital Signing</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">pyHanko loads the .pfx signer once in memory and signs the entire batch with PAdES visible stamp.</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none bg-slate-950/60 px-3 py-1.5 rounded-xl border border-slate-800">
+              <input type="checkbox" id="chkTimestamp" class="rounded bg-slate-800 border-slate-700 text-indigo-500">
+              <span>RFC 3161 Timestamp</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Big Signing Action Banner -->
+        <div class="p-6 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-indigo-950/40 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 class="text-base font-bold text-white">Ready to Sign Invoices</h3>
+            <p class="text-xs text-slate-300 mt-1">Signs all ready invoices in batch, appending visible signature field <code class="text-emerald-400 bg-slate-950 px-1 py-0.5 rounded">Signature1</code> on the last page.</p>
+          </div>
+          <button id="btnSignAll" onclick="signAllInvoices()" class="w-full sm:w-auto px-7 py-3 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-xl shadow-emerald-600/30 transition flex items-center justify-center space-x-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            <span>⚡ Sign All Invoices Now</span>
+          </button>
+        </div>
+
+        <!-- Progress Banner -->
+        <div id="signingBanner" class="hidden p-4 rounded-xl bg-indigo-950/30 border border-indigo-800/40">
+          <div class="flex items-center justify-between text-xs mb-2">
+            <div class="flex items-center space-x-2">
+              <span id="signingStatusIcon" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span id="signingStatusText" class="font-semibold text-emerald-300">Signing invoices...</span>
+            </div>
+            <span id="signingElapsed" class="font-mono text-emerald-400 font-bold"></span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div id="signingProgressBar" class="bg-gradient-to-r from-indigo-500 to-emerald-400 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Signed Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950/80 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4">Signed PDF Document</th>
+                <th class="py-3 px-4">Signature Spec</th>
+                <th class="py-3 px-4 text-center">In-Page Preview</th>
+              </tr>
+            </thead>
+            <tbody id="signedTableBody" class="divide-y divide-slate-800/60">
+              <tr>
+                <td colspan="3" class="py-8 text-center text-slate-500">
+                  Click "⚡ Sign All Invoices Now" above to sign the batch.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between pt-2">
+          <button onclick="goToStep(1)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700">← Back: Setup</button>
+          <button id="btnStep2Next" onclick="goToStep(3)" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg transition flex items-center space-x-2">
+            <span>Next: Proof 1 (The ByteRange) →</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= STEP 3: PROOF 1 (BYTERANGE) ================= -->
+    <div id="stepView3" class="step-content space-y-6">
+      <div class="bg-slate-900 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-purple-500/20 text-purple-400 border border-purple-500/30">STEP 3 OF 5: PROOF 1</span>
+              <h2 class="text-lg font-bold text-white">How it Works: The /ByteRange Architecture</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">The live proof of how pyHanko signs the PDF without the signature breaking its own hash.</p>
+          </div>
+          <div id="inspectedFilenameBadge" class="text-xs font-mono font-semibold px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-indigo-300">
+            INV-2026-001-signed.pdf
+          </div>
+        </div>
+
+        <!-- Explanatory Caption -->
+        <div class="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 to-slate-900 border border-emerald-500/40 flex items-start space-x-3">
+          <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">✓</div>
+          <div>
+            <h4 class="text-xs font-bold text-emerald-300 uppercase tracking-wide">The Core Cryptographic Solution:</h4>
+            <p id="inspectCaption" class="text-xs text-emerald-100 font-medium leading-relaxed mt-0.5">
+              Everything green was hashed and signed. The grey hole holds the signature, so inserting it into the file didn't change the hash!
+            </p>
+          </div>
+        </div>
+
+        <!-- Horizontal Scaled Bar -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between text-[11px] text-slate-400 font-mono">
+            <span>Byte 0 (Start)</span>
+            <span id="byteRangeOffsetsText" class="text-indigo-300 font-bold">/ByteRange [0 6944 11902 627]</span>
+            <span id="byteRangeEofText">EOF: 12,529 B</span>
+          </div>
+
+          <div class="h-12 w-full rounded-xl overflow-hidden flex border border-slate-700 shadow-inner bg-slate-950 p-1 gap-1">
+            <!-- Range 1 -->
+            <div id="barRange1" class="bg-emerald-600 hover:bg-emerald-500 transition-all rounded-lg flex items-center justify-center text-[10px] font-bold text-white" style="width: 55%;">
+              <span class="truncate px-1">Range 1 (Hashed & Signed)</span>
+            </div>
+
+            <!-- Signature Placeholder Hole -->
+            <div id="barPlaceholder" class="bg-slate-700 hover:bg-slate-600 transition-all rounded-lg flex items-center justify-center text-[10px] font-bold text-slate-200 border-2 border-dashed border-slate-400" style="width: 40%;">
+              <span class="truncate px-1">Signature Placeholder (Excluded)</span>
+            </div>
+
+            <!-- Range 2 -->
+            <div id="barRange2" class="bg-emerald-600 hover:bg-emerald-500 transition-all rounded-lg flex items-center justify-center text-[10px] font-bold text-white" style="width: 5%;">
+              <span class="truncate px-1">Range 2</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+            <div class="text-[11px] text-slate-400">Total File Size</div>
+            <div id="metricFileSize" class="text-sm font-bold text-white font-mono mt-1">-</div>
+            <div id="metricOffsets" class="text-[10px] text-slate-400 font-mono mt-1">Range1: 0..6944</div>
+          </div>
+
+          <div class="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+            <div class="text-[11px] text-slate-400">Placeholder Capacity</div>
+            <div id="metricPlaceholder" class="text-sm font-bold text-slate-300 font-mono mt-1">-</div>
+            <div id="metricHolePct" class="text-[10px] text-slate-400 mt-1">Reserved hole in PDF</div>
+          </div>
+
+          <div class="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+            <div class="text-[11px] text-slate-400">Actual Signature / Padding</div>
+            <div id="metricSigBytes" class="text-sm font-bold text-amber-300 font-mono mt-1">-</div>
+            <div id="metricPaddingBytes" class="text-[10px] text-slate-400 mt-1">Trailing zeroes: -</div>
+          </div>
+
+          <div class="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+            <div class="text-[11px] text-slate-400">SHA-256 of hashed ranges vs. messageDigest in signature</div>
+            <div id="metricSha256" class="text-[11px] font-mono text-emerald-400 mt-1 break-all select-all font-semibold whitespace-pre-wrap">-</div>
+            <div class="text-[10px] text-slate-500 mt-1">Hash of Range 1 + Range 2</div>
+          </div>
+        </div>
+
+        <!-- /Contents Hex -->
+        <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800">
+          <div class="text-[11px] text-slate-400 mb-1 font-medium">DER CMS PKCS#7 Signature in Placeholder (First 64 Hex Chars):</div>
+          <div id="metricContentsHex" class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono text-indigo-300 select-all break-all">
+            -
+          </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between pt-2">
+          <button onclick="goToStep(2)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700">← Back: Bulk Sign</button>
+          <button onclick="goToStep(4)" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-rose-500 hover:from-indigo-500 hover:to-rose-400 text-white font-bold text-xs shadow-lg transition flex items-center space-x-2">
+            <span>Next: Proof 2 (Tamper Test) →</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= STEP 4: PROOF 2 (TAMPER TEST) ================= -->
+    <div id="stepView4" class="step-content space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30">STEP 4 OF 5: PROOF 2</span>
+              <h2 class="text-lg font-bold text-white">Live Verification & Tamper Test</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Watch what happens when an attacker modifies the invoice total from Rs. 59,000.00 to Rs. 99,000.00.</p>
+          </div>
+          <button id="btnTamperAction" onclick="tamperActiveInvoice()" class="px-4 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 transition flex items-center space-x-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span>🔥 Simulate Tamper (Change Rs. 59k → 99k)</span>
+          </button>
+        </div>
+
+        <!-- Side-by-Side Comparison -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Card A: Original Signed PDF -->
+          <div class="bg-slate-950/90 border border-emerald-500/40 rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                <h3 class="font-bold text-sm text-white">Original Signed Invoice</h3>
+              </div>
+              <button onclick="previewActive('original')" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold underline">Preview Invoice</button>
+            </div>
+
+            <!-- Badges -->
+            <div class="grid grid-cols-3 gap-2">
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Document unchanged?</div>
+                <div id="origBadgeIntact" class="text-xs font-bold text-emerald-400 mt-1">Intact ✅</div>
+                <div class="text-[8px] text-slate-400">Bytes unchanged</div>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Signature genuine?</div>
+                <div id="origBadgeValid" class="text-xs font-bold text-emerald-400 mt-1">Valid ✅</div>
+                <div class="text-[8px] text-slate-400">Signature maths</div>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Signer trusted?</div>
+                <div id="origBadgeTrusted" class="text-xs font-bold text-emerald-400 mt-1">Trusted ✅</div>
+                <div class="text-[8px] text-slate-400">Trust root chain</div>
+              </div>
+            </div>
+
+            <div class="space-y-1.5 text-xs bg-slate-900/60 p-3 rounded-xl border border-slate-800/60 font-mono">
+              <div class="flex justify-between">
+                <span class="text-slate-400 font-sans">Signer:</span>
+                <span id="origSignerName" class="text-slate-200 font-semibold truncate">Dream Road Technologies</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400 font-sans">Status:</span>
+                <span id="origStatusMessage" class="text-emerald-400 font-semibold">Verified & Intact</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card B: Tampered PDF -->
+          <div class="bg-slate-950/90 border border-rose-500/40 rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-rose-400"></span>
+                <h3 class="font-bold text-sm text-white">Tampered Invoice Test</h3>
+              </div>
+              <button id="btnPreviewTampered" onclick="previewActive('tampered')" class="hidden text-xs text-rose-400 hover:text-rose-300 font-semibold underline">Preview Tampered</button>
+            </div>
+
+            <!-- Badges -->
+            <div class="grid grid-cols-3 gap-2">
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Document unchanged?</div>
+                <div id="tampBadgeIntact" class="text-xs font-bold text-slate-500 mt-1">Waiting...</div>
+                <div class="text-[8px] text-slate-400">Bytes altered?</div>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Signature genuine?</div>
+                <div id="tampBadgeValid" class="text-xs font-bold text-slate-500 mt-1">-</div>
+                <div class="text-[8px] text-slate-400">Digest match</div>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Signer trusted?</div>
+                <div id="tampBadgeTrusted" class="text-xs font-bold text-slate-500 mt-1">-</div>
+                <div class="text-[8px] text-slate-400">Trust root chain</div>
+              </div>
+            </div>
+
+            <div class="space-y-1.5 text-xs bg-slate-900/60 p-3 rounded-xl border border-slate-800/60 font-mono">
+              <div class="flex justify-between">
+                <span class="text-slate-400 font-sans">Tamper Action:</span>
+                <span id="tampActionText" class="text-amber-300 font-semibold">Click simulate tamper button</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400 font-sans">Verifier Verdict:</span>
+                <span id="tampVerdictText" class="text-slate-400">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between pt-2">
+          <button onclick="goToStep(3)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700">← Back: Proof 1</button>
+          <button onclick="goToStep(5)" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition flex items-center space-x-2">
+            <span>Done! View Summary →</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= STEP 5: DONE! SUMMARY ================= -->
+    <div id="stepView5" class="step-content space-y-6">
+      <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl p-7 shadow-2xl space-y-6">
+        <div class="flex items-center space-x-3 pb-4 border-b border-slate-800">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-2xl">
+            ✓
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-white">Live Demo Complete: Fully Proven!</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Automated bulk signing with pyHanko solves the Adobe token bottleneck without paying vendors extra.</p>
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+            <div class="text-2xl mb-1">⚡</div>
+            <div class="text-xs font-bold text-white">Sub-Second Speed</div>
+            <div class="text-[11px] text-slate-400 mt-1">Signed batch in seconds. Scales easily to 500+ invoices without USB token clicking.</div>
+          </div>
+
+          <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+            <div class="text-2xl mb-1">🛡️</div>
+            <div class="text-xs font-bold text-white">Tamper Detection</div>
+            <div class="text-[11px] text-slate-400 mt-1">/ByteRange SHA-256 immediately catches any modified amount (Rs. 59,000 → 99,000).</div>
+          </div>
+
+          <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+            <div class="text-2xl mb-1">⚖️</div>
+            <div class="text-xs font-bold text-white">Legal PAdES Compliance</div>
+            <div class="text-[11px] text-slate-400 mt-1">Includes nonRepudiation KeyUsage and visible signature stamp complying with IT Act 2000.</div>
+          </div>
+
+          <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+            <div class="text-2xl mb-1">💰</div>
+            <div class="text-xs font-bold text-white">Zero Extra Vendor Fees</div>
+            <div class="text-[11px] text-slate-400 mt-1">Uses company's existing .pfx certificate loaded securely in our own Python backend.</div>
+          </div>
+        </div>
+
+        <!-- Adobe Acrobat Note -->
+        <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 space-y-1">
+          <div class="font-bold text-slate-200">Note for Stakeholders regarding Adobe Acrobat:</div>
+          <p class="text-slate-400 leading-relaxed text-[11px]">
+            In Adobe Acrobat, this demo PDF shows "Validity UNKNOWN" (yellow question mark) because our test certificate is self-signed. In production, a commercial Document Signer Certificate from an AATL-licensed CA (eMudhra, Capricorn, Vsign) automatically shows the <strong>Green Tick</strong>. The cryptographic code and PDF byte structure we built are 100% identical.
+          </p>
+        </div>
+
+        <!-- Restart Button -->
+        <div class="flex justify-between items-center pt-2">
+          <button onclick="goToStep(4)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700">← Back: Tamper Test</button>
+          <button onclick="goToStep(1)" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg transition">
+            Restart Demo from Step 1 ↺
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ================= IN-PAGE CANVAS PREVIEW MODAL (NO DOWNLOAD EVER) ================= -->
+  <div id="pdfModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] p-4 flex flex-col shadow-2xl">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-800 px-2">
+        <div class="flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <h3 id="pdfModalTitle" class="text-xs font-mono font-bold text-white">Preview PDF (In-Browser Canvas Render)</h3>
+        </div>
+        <button onclick="closePdfModal()" class="text-slate-400 hover:text-white px-2 py-1 text-sm font-bold">✕ Close</button>
+      </div>
+
+      <!-- Canvas container with scrolling -->
+      <div class="flex-1 mt-3 bg-slate-950 rounded-xl overflow-auto border border-slate-800 p-4 flex items-center justify-center min-h-[400px]">
+        <div id="pdfLoadingIndicator" class="text-xs text-indigo-400 animate-pulse font-mono">Rendering PDF page to canvas...</div>
+        <canvas id="pdfCanvas" class="shadow-2xl rounded border border-slate-700 max-w-full hidden"></canvas>
+      </div>
+      
+      <div class="mt-2 text-center text-[11px] text-slate-500 font-mono">
+        Rendered natively in-memory via HTML5 canvas • No file download initiated
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload PFX Modal -->
+  <div id="uploadCertModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+        <h3 class="text-sm font-bold text-white">Upload Real PKCS#12 (.pfx) Certificate</h3>
+        <button onclick="closeUploadCertModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <form id="uploadCertForm" onsubmit="submitCustomCert(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1">Select .pfx or .p12 File:</label>
+          <input type="file" id="pfxFileInput" accept=".pfx,.p12" required class="w-full text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-slate-800 file:text-slate-200">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 mb-1">Password:</label>
+          <input type="password" id="pfxPasswordInput" placeholder="Password (if any)" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeUploadCertModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold">Activate Certificate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-900 py-4 text-center text-xs text-slate-500">
+    Bulk Digital Invoice Signing POC • Powered by pyHanko & FastAPI • Preview Only Mode
+  </footer>
+
+  <!-- Application Logic -->
+  <script>
+    // Initialize PDF.js worker
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+
+    let activeInvoices = { inputs: [], signed: [], tampered: [] };
+    let currentStep = 1;
+    let selectedSignedFile = "INV-2026-001-signed.pdf";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadCertificate();
+      refreshInvoices();
+    });
+
+    // Step navigation
+    function goToStep(step) {
+      currentStep = step;
+      for (let i = 1; i <= 5; i++) {
+        const view = document.getElementById(`stepView${i}`);
+        const tab = document.getElementById(`stepTab${i}`);
+        if (i === step) {
+          view.classList.add("active");
+          tab.className = "flex items-center space-x-2 px-3 py-2 rounded-xl transition border shrink-0 bg-indigo-600/20 border-indigo-500/40 text-white font-semibold";
+        } else {
+          view.classList.remove("active");
+          tab.className = "flex items-center space-x-2 px-3 py-2 rounded-xl transition border shrink-0 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200";
+        }
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Trigger step-specific load if needed
+      if (step === 3 && selectedSignedFile) {
+        inspectFile(selectedSignedFile);
+      } else if (step === 4 && selectedSignedFile) {
+        verifyFile(selectedSignedFile);
+      }
+    }
+
+    // 1. Certificate API
+    async function loadCertificate() {
+      try {
+        const res = await fetch("/api/cert");
+        const cert = await res.json();
+        renderCertificate(cert);
+      } catch (err) {
+        console.error("Failed to load certificate", err);
+      }
+    }
+
+    function renderCertificate(cert) {
+      document.getElementById("certSubject").innerText = cert.subject_cn || cert.subject_org || "Unknown";
+      document.getElementById("certSerial").innerText = `SN: ${cert.serial_number}`;
+      const fromDate = cert.not_valid_before ? cert.not_valid_before.split("T")[0] : "-";
+      const toDate = cert.not_valid_after ? cert.not_valid_after.split("T")[0] : "-";
+      document.getElementById("certValidity").innerText = `${fromDate} → ${toDate}`;
+
+      const badge = document.getElementById("certTypeBadge");
+      if (cert.is_demo) {
+        badge.className = "px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30";
+        badge.innerText = "Self-Signed TEST";
+      } else {
+        badge.className = "px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+        badge.innerText = "Custom .PFX Loaded";
+      }
+    }
+
+    function openUploadCertModal() { document.getElementById("uploadCertModal").classList.remove("hidden"); }
+    function closeUploadCertModal() { document.getElementById("uploadCertModal").classList.add("hidden"); }
+
+    async function submitCustomCert(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById("pfxFileInput");
+      const pwdInput = document.getElementById("pfxPasswordInput");
+      if (!fileInput.files.length) return;
+
+      const fd = new FormData();
+      fd.append("file", fileInput.files[0]);
+      fd.append("password", pwdInput.value);
+
+      try {
+        const res = await fetch("/api/cert/upload", { method: "POST", body: fd });
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.detail || "Upload failed");
+          return;
+        }
+        const data = await res.json();
+        renderCertificate(data.cert);
+        closeUploadCertModal();
+        alert("Custom certificate activated successfully!");
+      } catch (err) {
+        alert("Failed to upload certificate: " + err);
+      }
+    }
+
+    // 2. Invoices Management
+    async function refreshInvoices() {
+      try {
+        const res = await fetch("/api/invoices");
+        activeInvoices = await res.json();
+        renderInputInvoices();
+        renderSignedTable();
+      } catch (err) {
+        console.error("Failed to refresh invoices", err);
+      }
+    }
+
+    async function generateSampleInvoices() {
+      const btn = document.getElementById("btnGenerate");
+      btn.disabled = true;
+      btn.innerText = "Generating...";
+
+      try {
+        await fetch("/api/invoices/generate", { method: "POST" });
+        await refreshInvoices();
+      } catch (err) {
+        alert("Failed to generate invoices: " + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg><span>Generate 10 Sample Invoices</span>`;
+      }
+    }
+
+    async function uploadCustomPdfs(event) {
+      const files = event.target.files;
+      if (!files.length) return;
+      const fd = new FormData();
+      for (const f of files) fd.append("files", f);
+
+      try {
+        await fetch("/api/invoices/upload", { method: "POST", body: fd });
+        await refreshInvoices();
+      } catch (err) {
+        alert("Upload error: " + err);
+      }
+    }
+
+    function renderInputInvoices() {
+      const container = document.getElementById("inputInvoicesList");
+      const countEl = document.getElementById("inputInvoicesCount");
+      const inputs = activeInvoices.inputs || [];
+
+      countEl.innerText = `${inputs.length} invoice(s) ready in input queue`;
+
+      if (inputs.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-5 text-center text-xs text-slate-500 bg-slate-950/40 rounded-xl border border-dashed border-slate-800">No invoices generated yet. Click "Generate 10 Sample Invoices" above.</div>`;
+        return;
+      }
+
+      container.innerHTML = inputs.map(f => `
+        <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between hover:border-slate-700 transition">
+          <div class="flex items-center space-x-2 truncate">
+            <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+            <span class="text-[11px] font-mono text-slate-200 truncate">${f}</span>
+          </div>
+          <button onclick="previewInvoice('input', '${f}')" class="px-2 py-0.5 rounded bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-[10px] font-semibold transition shrink-0 ml-1">
+            Preview
+          </button>
+        </div>
+      `).join("");
+    }
+
+    // 3. Signing Flow
+    async function signAllInvoices() {
+      const btn = document.getElementById("btnSignAll");
+      const banner = document.getElementById("signingBanner");
+      const progressBar = document.getElementById("signingProgressBar");
+      const statusText = document.getElementById("signingStatusText");
+      const elapsedText = document.getElementById("signingElapsed");
+      const useTimestamp = document.getElementById("chkTimestamp").checked;
+
+      btn.disabled = true;
+      banner.classList.remove("hidden");
+      progressBar.style.width = "40%";
+      statusText.innerText = "pyHanko signing invoices...";
+      elapsedText.innerText = "";
+
+      try {
+        const res = await fetch("/api/sign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ use_timestamp: useTimestamp })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.detail || "Signing failed");
+          return;
+        }
+
+        progressBar.style.width = "100%";
+        statusText.innerText = `Signed ${data.successful_count} invoices successfully!`;
+        elapsedText.innerText = `Signed in ${data.elapsed_seconds} s`;
+
+        await refreshInvoices();
+
+        if (data.results && data.results.length > 0 && data.results[0].signed_filename) {
+          selectedSignedFile = data.results[0].signed_filename;
+        }
+      } catch (err) {
+        alert("Signing request failed: " + err);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderSignedTable() {
+      const tbody = document.getElementById("signedTableBody");
+      const signed = activeInvoices.signed || [];
+
+      if (signed.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="py-8 text-center text-slate-500">No signed invoices yet. Click "⚡ Sign All Invoices Now" above.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = signed.map(filename => `
+        <tr class="hover:bg-slate-950/40 transition">
+          <td class="py-2.5 px-4">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span class="font-mono text-slate-200 font-medium">${filename}</span>
+            </div>
+          </td>
+          <td class="py-2.5 px-4">
+            <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+              Signature1 (Bottom Right Stamp)
+            </span>
+          </td>
+          <td class="py-2.5 px-4 text-center">
+            <button onclick="previewInvoice('output', '${filename}')" class="px-3 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-semibold transition text-[11px]">
+              Preview Signed PDF
+            </button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    // 4. ByteRange Inspection
+    async function inspectFile(filename) {
+      selectedSignedFile = filename;
+      try {
+        const res = await fetch(`/api/inspect/${encodeURIComponent(filename)}`);
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.detail || "Inspection error");
+          return;
+        }
+        const data = await res.json();
+        renderInspection(data);
+      } catch (err) {
+        alert("Failed to inspect file: " + err);
+      }
+    }
+
+    function renderInspection(data) {
+      document.getElementById("inspectedFilenameBadge").innerText = data.filename;
+
+      const [s1, l1, s2, l2] = data.byte_range;
+      document.getElementById("byteRangeOffsetsText").innerText = `/ByteRange [${s1} ${l1} ${s2} ${l2}]`;
+      document.getElementById("byteRangeEofText").innerText = `EOF: ${data.file_size} B`;
+
+      const barR1 = document.getElementById("barRange1");
+      const barHole = document.getElementById("barPlaceholder");
+      const barR2 = document.getElementById("barRange2");
+
+      barR1.style.width = `${Math.max(5, data.range1_pct)}%`;
+      barR1.innerHTML = `<span class="truncate px-1">Range 1: ${data.range1_len.toLocaleString()} B (${data.range1_pct}%)</span>`;
+
+      barHole.style.width = `${Math.max(10, data.placeholder_pct)}%`;
+      barHole.innerHTML = `<span class="truncate px-1">Placeholder Hole: ${data.placeholder_size.toLocaleString()} B (${data.placeholder_pct}%)</span>`;
+
+      barR2.style.width = `${Math.max(5, data.range2_pct)}%`;
+      barR2.innerHTML = `<span class="truncate px-1">Range 2: ${data.range2_len.toLocaleString()} B (${data.range2_pct}%)</span>`;
+
+      document.getElementById("metricFileSize").innerText = `${data.file_size.toLocaleString()} bytes`;
+      document.getElementById("metricOffsets").innerText = `Range1: 0..${l1} | Range2: ${s2}..${s2+l2}`;
+      document.getElementById("metricPlaceholder").innerText =
+        `${data.placeholder_size.toLocaleString()} B in file = ${data.total_contents_bytes.toLocaleString()} B of signature space (hex: 2 chars per byte)`;
+      document.getElementById("metricHolePct").innerText = `${data.placeholder_pct}% of total file`;
+      document.getElementById("metricSigBytes").innerText = `${data.actual_sig_bytes.toLocaleString()} B / ${data.total_contents_bytes.toLocaleString()} B`;
+      document.getElementById("metricPaddingBytes").innerText = `Padding: ${data.zero_padding_bytes.toLocaleString()} zero bytes`;
+      document.getElementById("metricSha256").innerText =
+        `Computed now:     ${data.sha256_hash}\n` +
+        `Inside signature: ${data.message_digest_hex || "(not found)"}\n` +
+        (data.digest_matches ? "✅ MATCH — this is the hash the signer committed to"
+                             : "❌ MISMATCH");
+      document.getElementById("metricContentsHex").innerText = data.first_64_hex ? `<${data.first_64_hex}...>` : "(None)";
+      document.getElementById("inspectCaption").innerText = data.caption;
+    }
+
+    // 5. Verification & Tamper Test
+    async function verifyFile(filename) {
+      selectedSignedFile = filename;
+      try {
+        const res = await fetch(`/api/verify/${encodeURIComponent(filename)}`, { method: "POST" });
+        const data = await res.json();
+        renderVerificationCard("orig", data);
+      } catch (err) {
+        alert("Verification failed: " + err);
+      }
+    }
+
+    async function tamperActiveInvoice() {
+      const btn = document.getElementById("btnTamperAction");
+      btn.disabled = true;
+      btn.innerText = "Tampering...";
+
+      try {
+        const res = await fetch(`/api/tamper/${encodeURIComponent(selectedSignedFile)}`, { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.detail || "Tamper request failed");
+          return;
+        }
+
+        renderVerificationCard("orig", data.original);
+        renderVerificationCard("tamp", data.tampered);
+
+        document.getElementById("tampActionText").innerText = data.action;
+        document.getElementById("tampVerdictText").innerText = data.tampered.intact ? "Tamper not caught" : "Tamper Detected! Intact check failed.";
+        document.getElementById("btnPreviewTampered").classList.remove("hidden");
+
+        await refreshInvoices();
+      } catch (err) {
+        alert("Tamper test error: " + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><span>🔥 Simulate Tamper (Change Rs. 59k → 99k)</span>`;
+      }
+    }
+
+    function renderVerificationCard(prefix, data) {
+      const intactEl = document.getElementById(`${prefix}BadgeIntact`);
+      const validEl = document.getElementById(`${prefix}BadgeValid`);
+      const trustedEl = document.getElementById(`${prefix}BadgeTrusted`);
+
+      if (data.intact) {
+        intactEl.className = "text-xs font-bold text-emerald-400 mt-1";
+        intactEl.innerText = "Intact ✅";
+      } else {
+        intactEl.className = "text-xs font-bold text-rose-500 mt-1";
+        intactEl.innerText = "Altered ❌";
+      }
+
+      if (data.valid) {
+        validEl.className = "text-xs font-bold text-emerald-400 mt-1";
+        validEl.innerText = "Valid ✅";
+      } else {
+        validEl.className = "text-xs font-bold text-rose-500 mt-1";
+        validEl.innerText = "Invalid ❌";
+      }
+
+      if (data.trusted) {
+        trustedEl.className = "text-xs font-bold text-emerald-400 mt-1";
+        trustedEl.innerText = "Trusted ✅";
+      } else if (data.signed && !data.intact) {
+        // pyHanko skips the trust check once the document fails the hash
+        // check, so "untrusted" here would wrongly blame the signer
+        trustedEl.className = "text-xs font-bold text-slate-400 mt-1";
+        trustedEl.innerText = "Not checked —";
+      } else {
+        trustedEl.className = "text-xs font-bold text-amber-400 mt-1";
+        trustedEl.innerText = "Untrusted ⚠️";
+      }
+
+      if (prefix === "orig") {
+        document.getElementById("origSignerName").innerText = data.signer || "Unknown";
+        document.getElementById("origStatusMessage").innerText = data.message || "Verified";
+      }
+    }
+
+    function previewActive(type) {
+      if (type === "original") {
+        previewInvoice("output", selectedSignedFile);
+      } else {
+        const cleanStem = selectedSignedFile.replace("-signed.pdf", "").replace(".pdf", "");
+        previewInvoice("output", `${cleanStem}-TAMPERED.pdf`);
+      }
+    }
+
+    // ================= PURE CANVAS PDF PREVIEW (NO DOWNLOAD DIALOG EVER) =================
+    async function previewInvoice(folder, filename) {
+      const modal = document.getElementById("pdfModal");
+      const title = document.getElementById("pdfModalTitle");
+      const canvas = document.getElementById("pdfCanvas");
+      const indicator = document.getElementById("pdfLoadingIndicator");
+
+      title.innerText = `Preview Invoice: ${folder}/${filename}`;
+      canvas.classList.add("hidden");
+      indicator.classList.remove("hidden");
+      indicator.innerText = "Rendering PDF page to canvas...";
+      modal.classList.remove("hidden");
+
+      try {
+        // Use POST /api/preview-bytes with JSON to guarantee IDM (Internet Download Manager)
+        // never intercepts the request (IDM only hooks GET requests with .pdf URLs)
+        const response = await fetch("/api/preview-bytes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ folder: folder, filename: filename })
+        });
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || "Failed to fetch document");
+        }
+        const resData = await response.json();
+
+        // Decode base64 to Uint8Array in memory
+        const binaryString = atob(resData.base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        if (window.pdfjsLib) {
+          const loadingTask = pdfjsLib.getDocument({ data: bytes });
+          const pdf = await loadingTask.promise;
+          const page = await pdf.getPage(1);
+
+          // Render scale suitable for modal
+          const viewport = page.getViewport({ scale: 1.25 });
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          // a second Preview click while one is still drawing would paint two
+          // renders onto the same canvas; cancel the previous one first
+          if (window.__previewRenderTask) {
+            try { window.__previewRenderTask.cancel(); } catch (_) {}
+          }
+          window.__previewRenderTask = page.render({ canvasContext: context, viewport: viewport });
+          try {
+            await window.__previewRenderTask.promise;
+          } catch (e) {
+            if (e && e.name === "RenderingCancelledException") return;  // superseded by a newer click
+            throw e;
+          }
+
+          indicator.classList.add("hidden");
+          canvas.classList.remove("hidden");
+        } else {
+          indicator.innerText = "PDF.js not loaded. (Offline mode)";
+        }
+      } catch (err) {
+        // fetch() rejects with a bare TypeError only when the server can't be
+        // reached at all, so say that instead of the cryptic "Failed to fetch"
+        indicator.innerText = (err instanceof TypeError && /fetch/i.test(err.message))
+          ? "Can't reach the server. Make sure uvicorn is running, then refresh the page."
+          : "Error rendering PDF preview: " + err.message;
+        console.error(err);
+      }
+    }
+
+    function closePdfModal() {
+      document.getElementById("pdfModal").classList.add("hidden");
+    }
+
+    async function resetDemo() {
+      if (!confirm("Restart demo from Step 1 and clear invoices?\n\nThis is a shared demo: it clears the invoices for everyone using this link.")) return;
+      try {
+        await fetch("/api/reset", { method: "POST" });
+        await refreshInvoices();
+        goToStep(1);
+      } catch (err) {
+        alert("Reset failed: " + err);
+      }
+    }
+  </script>
+</body>
+</html>
