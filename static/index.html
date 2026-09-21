@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bulk PDF Digital Signing — Live 2-Min Demo</title>
+  <title>Bulk PDF Digital Signing — POC</title>
+  <meta name="description" content="Proof of concept: bulk PAdES signing of invoices with a Document Signer certificate (.pfx) using pyHanko, with ByteRange inspection and tamper detection.">
+  <meta property="og:title" content="Bulk PDF Digital Signing — POC">
+  <meta property="og:description" content="Bulk PAdES signing of invoices with a Document Signer certificate (.pfx) using pyHanko, with ByteRange inspection and tamper detection.">
+  <meta property="og:type" content="website">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,7 +34,7 @@
         <div>
           <div class="flex items-center space-x-2">
             <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Bulk Invoice Signing POC</h1>
-            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Live 2-Min Demo</span>
+            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Proof of Concept</span>
           </div>
           <p class="text-xs text-slate-400">pyHanko + PKCS#12 Document Signer Certificate (PAdES)</p>
         </div>
@@ -503,7 +507,7 @@
             ✓
           </div>
           <div>
-            <h2 class="text-xl font-bold text-white">Live Demo Complete: Fully Proven!</h2>
+            <h2 class="text-xl font-bold text-white">Flow complete: signing, verification and tamper detection</h2>
             <p class="text-xs text-slate-400 mt-0.5">Automated bulk signing with pyHanko solves the Adobe token bottleneck without paying vendors extra.</p>
           </div>
         </div>
@@ -537,9 +541,9 @@
 
         <!-- Adobe Acrobat Note -->
         <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 space-y-1">
-          <div class="font-bold text-slate-200">Note for Stakeholders regarding Adobe Acrobat:</div>
+          <div class="font-bold text-slate-200">Note on Adobe Acrobat:</div>
           <p class="text-slate-400 leading-relaxed text-[11px]">
-            In Adobe Acrobat, this demo PDF shows "Validity UNKNOWN" (yellow question mark) because our test certificate is self-signed. In production, a commercial Document Signer Certificate from an AATL-licensed CA (eMudhra, Capricorn, Vsign) automatically shows the <strong>Green Tick</strong>. The cryptographic code and PDF byte structure we built are 100% identical.
+            In Adobe Acrobat, this demo PDF shows "Validity UNKNOWN" (yellow question mark) because our test certificate is self-signed. In production, a commercial Document Signer Certificate from an AATL-licensed CA (eMudhra, Capricorn, Vsign) shows the <strong>Green Tick</strong>. The signing code and PDF structure stay the same; only the certificate changes.
           </p>
         </div>
 
